@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>OAuth2 Mail Client</title>
+</head>
+<body>
+    <h3>OAuth2 Mail Viewer</h3>
+    <input id="inputData" style="width: 600px;" placeholder="email:password:OAuth2_key:UUID" />
+    <button onclick="fetchMails()">Получить письма</button>
+
+    <div id="results"></div>
+
+    <script>
+        function parseData(data) {
+            const parts = data.split(':');
+            return {
+                email: parts[0],
+                oauthToken: parts[2]
+            };
+        }
+
+        function fetchMails() {
+            const rawData = document.getElementById('inputData').value;
+            const { email, oauthToken } = parseData(rawData);
+
+            fetch('https://mail-api-sage.vercel.app/get-mails', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, token: oauthToken })
+            })
+            .then(res => res.json())
+            .then(res => {
+                const container = document.getElementById('results');
+                container.innerHTML = '';
+
+                if(res.error){
+                    container.textContent = `Ошибка: ${res.error}`;
+                    return;
+                }
+
+                res.mails.forEach(mail => {
+                    const div = document.createElement('div');
+                    div.innerHTML = `
+                        <strong>Тема:</strong> ${mail.subject}<br>
+                        <strong>От:</strong> ${mail.from}<br>
+                        <strong>Дата:</strong> ${mail.date}<br><hr>
+                    `;
+                    container.appendChild(div);
+                });
+            })
+            .catch(e => {
+                document.getElementById('results').textContent = `Ошибка запроса: ${e}`;
+            });
+        }
+    </script>
+</body>
+</html>
